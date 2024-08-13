@@ -22,10 +22,14 @@ const removeUndefinedObject = (obj) => {
     });
     return obj;
 }
+
+
+
 module.exports={
     getInfoData,
     getSelectData,
     getUnSelectData,
     removeUndefinedObject,
     convertToObjectIdMongoDb
+    
 }

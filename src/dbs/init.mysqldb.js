@@ -42,6 +42,15 @@ class Database {
     getConnection() {
         return this.connection;
     }
+
+    executeQuery = (query,params=[])=>{
+        return new Promise ((resolve,reject)=>{
+            this.connection.query(query,params,(err,results)=>{
+                if(err) return reject(err)
+                resolve(results)
+            })
+        })
+    }
 }
 
 const instanceMysql = Database.getInstance();
