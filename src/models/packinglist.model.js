@@ -36,6 +36,11 @@ const PackingList = function(packinglist){
     this.updated_by = packinglist.updated_by;
     this.created_by = packinglist.created_by;
     this.request_id = packinglist.request_id;
+    this.tanggiam = packinglist.tanggiam;
+    this.makho  = packinglist.makho;
+    this.ART = packinglist.ART;
+    this.dac_diem_nhan_dang = packinglist.dac_diem_nhan_dang;
+    this.tanggiam = packinglist.tanggiam;
 }
 
 module.exports =PackingList

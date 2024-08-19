@@ -9,6 +9,20 @@ class PackingListController {
             metadata:await PackingListService.getPackingListImport(req.query)
         }).send(res)
     }
+
+    checkStatus = async (req,res,next) => {
+        new SuccessResponse({
+            message:'Get status packing list success',
+            metadata:await PackingListService.checkStatus(req.query)
+        }).send(res)
+    }
+
+    insertPackingList = async (req,res,next) => {
+        new SuccessResponse({
+            message:'Insert packing list success',
+            metadata:await PackingListService.insertPackingList(req.body)
+        }).send(res)
+    }
 }
 
 module.exports = new PackingListController()

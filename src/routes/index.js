@@ -4,7 +4,7 @@ const route = express.Router();
 
 debugger
 
-route.use('/v1/api/getPackingList', require('./packinglist/index'))
+route.use('/v1/api/packinglist', require('./packinglist/index'))
 
 //check permission
 

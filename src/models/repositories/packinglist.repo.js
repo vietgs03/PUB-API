@@ -8,4 +8,45 @@ const getAllPackingList = async ({ invoice_no, fromdate, todate }) => {
     return await db.executeQuery(query, [invoice_no, fromdate, todate]);
 };
 
-module.exports = { getAllPackingList };
+const checkStatus = async ({invoice_no})=>{
+    const query = `SELECT DISTINCT status FROM packinglist_import WHERE invoice_no = ?`;
+
+    return await db.executeQuery(query, [invoice_no]);
+}
+const getBienBanGiamDinh = async ({invoice_no})=>{
+    if(!invoice_no) throw new BadRequest('Missing invoice_no')
+    const query = `            
+            SELECT 
+                rowid,
+                name_packing,
+                ma_vattu,
+                ten_vattu,
+                slPacking,
+                slThucte,
+                slQuydoi,
+                description2 AS type
+            FROM bienBan_giamdinh
+            WHERE invoice_no = ?`
+    return await db.executeQuery(query, [invoice_no])
+
+}
+
+const getPackList = async ({invoice_no})=>{
+    if(!invoice_no) throw new BadRequest('Missing invoice_no')
+    const query = `            
+            SELECT 
+                rowid,
+                name_packing,
+                ma_vattu,
+                ten_vattu,
+                slPacking,
+                slThucte,
+                slQuydoi,
+                description2 AS type
+            FROM packinglist_import
+            WHERE invoice_no = ?`
+    return await db.executeQuery(query, [invoice_no])
+}
+
+
+module.exports = { getAllPackingList ,checkStatus,getBienBanGiamDinh};
