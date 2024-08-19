@@ -23,6 +23,13 @@ class PackingListController {
             metadata:await PackingListService.insertPackingList(req.body)
         }).send(res)
     }
+
+    compare = async (req,res,next) => {
+        new SuccessResponse({
+            message:'Compare packing list success',
+            metadata:await PackingListService.compare(req.body)
+        }).send(res)
+    }
 }
 
 module.exports = new PackingListController()
