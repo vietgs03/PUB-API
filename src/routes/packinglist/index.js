@@ -7,4 +7,9 @@ const asyncHandler = require('../../helpers/asyncHandler');
 
 route.get('/',asyncHandler(packinglistController.getAllPackingList))
 // curl http://localhost:5000/api/packinglist/?invoice_no=1&fromdate=2020-01-01&todate=2020-01-01
+route.get('/',asyncHandler(packinglistController.getPackingListByName))
+
+
+
+
 module.exports=route
