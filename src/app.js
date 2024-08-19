@@ -7,18 +7,15 @@ const app = express()
 
 // init middlewares
 app.use(morgan("dev"))
-//morgan("combined") for product
-//morgan("common")
-//morgan("short")
-//morgan("tiny")
-//morgan("dev") for dev
+
 app.use(helmet())
 app.use(compression()) // giảm tải 
-app.use(express.json())
+app.use(express.json({limit:'50mb'}))
 app.use(express.urlencoded({
-    extended:true
+    extended:true,
+    parameterLimit:100000,
+    limit:'50mb'
 }))
-
 // init db
 // require('./dbs/init.mongodb')
 require('./dbs/init.mysqldb')

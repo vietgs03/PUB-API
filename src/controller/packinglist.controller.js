@@ -22,6 +22,7 @@ class PackingListController {
         }).send(res)
     }
 
+<<<<<<< HEAD
     getPackingListByColor=async(req,res,next)=>{
         new SuccessResponse({
             message:'Get All packing list color success',
@@ -30,6 +31,28 @@ class PackingListController {
     }
 
     
+=======
+    checkStatus = async (req,res,next) => {
+        new SuccessResponse({
+            message:'Get status packing list success',
+            metadata:await PackingListService.checkStatus(req.query)
+        }).send(res)
+    }
+
+    insertPackingList = async (req,res,next) => {
+        new SuccessResponse({
+            message:'Insert packing list success',
+            metadata:await PackingListService.insertPackingList(req.body)
+        }).send(res)
+    }
+
+    compare = async (req,res,next) => {
+        new SuccessResponse({
+            message:'Compare packing list success',
+            metadata:await PackingListService.compare(req.body)
+        }).send(res)
+    }
+>>>>>>> upstream/main
 }
 
 module.exports = new PackingListController()

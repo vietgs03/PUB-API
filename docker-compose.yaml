@@ -1,25 +1,15 @@
 version: '3.8'
 
 services:
-  postgres:
-    container_name: postgres
-    image: postgres
+  app:
+    build: .
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pass}
-      PGDATA: /data/postgres
-    volumes:
-       - postgres:/data/postgres
+      NODE_ENV: ${NODE_ENV}
+      MYSQL_DB_HOST: ${MYSQL_DB_HOST}  
+      MYSQL_DB_PORT: ${MYSQL_DB_PORT}  
+      MYSQL_DB_USER: ${MYSQL_DB_USER}
+      MYSQL_DB_PASSWORD: ${MYSQL_DB_PASSWORD}
+      MYSQL_DB_NAME: ${MYSQL_DB_NAME}
     ports:
-      - "5432:5432"
-    networks:
-      - postgres
-    restart: unless-stopped
-
-
-networks:
-  postgres:
-    driver: bridge
-
-volumes:
-    postgres:
+      - "3060:3060"
+    command: ["npm", "start"]
