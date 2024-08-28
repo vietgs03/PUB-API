@@ -6,9 +6,9 @@ debugger
 
 route.use('/v1/api/packinglist', require('./packinglist/index'))
 
-route.use('/v1/api/getPackingListName', require('./packinglist/name'))
 
-route.use('/v1/api/getPackingListColor', require('./packinglist/color'))
+
+route.use('/v1/api/vattulist',require('./vattu/index'))
 
 
 //check permission
