@@ -204,74 +204,102 @@ class PackingListService {
         return await db.executeQuery(query, [requestId]);
     };
     
-    static compare = async(invoice_no)=>{
-
-        const bienbanData = await getBienBanGiamDinh(invoice_no)
-        if(bienbanData.length == 0) throw new BadRequest('Không tìm thấy biên bản ghi')
-
-        const packinglistData = await getPackList(invoice_no)
-        if(packinglistData.length == 0) throw new BadRequest('Không tìm thấy biên bản ghi')
-        
+    static compare = async (invoice_no) => {
+        // Lấy dữ liệu biên bản giám định
+        const groupByOption = invoice_no.groupByOption;
+        const bienbanData = await getBienBanGiamDinh(invoice_no);
+        if (bienbanData.length === 0) throw new BadRequest('Không tìm thấy biên bản ghi');
+    
+        // Lấy dữ liệu packing list
+        const packinglistData = await getPackList(invoice_no);
+        if (packinglistData.length === 0) throw new BadRequest('Không tìm thấy packing list ghi');
+    
+        // Tạo một map để lưu tên vật tư dựa trên mã vật tư (ma_vattu)
+        const tenVattuMap = bienbanData.reduce((acc, item) => {
+            acc[item.ma_vattu] = item.ten_vattu;
+            return acc;
+        }, {});
+    
+        // Gom nhóm dữ liệu biên bản giám định theo `ma_vattu`, `type`, và `groupByOption` (nếu có)
         const bienbanTotals = bienbanData.reduce((acc, item) => {
             const { ma_vattu, type, slPacking, slThucte, slQuydoi } = item;
+            const groupKey = groupByOption ? item[groupByOption] || 'default' : 'default';
+    
             if (!acc[ma_vattu]) acc[ma_vattu] = {};
-            if (!acc[ma_vattu][type]) acc[ma_vattu][type] = { slPacking: 0, slThucte: 0, slQuydoi: 0 };
-
-            acc[ma_vattu][type].slPacking += parseFloat(slPacking) || 0;
-            acc[ma_vattu][type].slThucte += parseFloat(slThucte) || 0;
-            acc[ma_vattu][type].slQuydoi += parseFloat(slQuydoi) || 0;
-
+            if (!acc[ma_vattu][type]) acc[ma_vattu][type] = {};
+            if (!acc[ma_vattu][type][groupKey]) acc[ma_vattu][type][groupKey] = { slPacking: 0, slThucte: 0, slQuydoi: 0 };
+    
+            acc[ma_vattu][type][groupKey].slPacking += parseFloat(slPacking) || 0;
+            acc[ma_vattu][type][groupKey].slThucte += parseFloat(slThucte) || 0;
+            acc[ma_vattu][type][groupKey].slQuydoi += parseFloat(slQuydoi) || 0;
+    
             return acc;
         }, {});
-
-        // Aggregate packinglistData
+    
+        // Gom nhóm dữ liệu packing list theo `ma_vattu`, `type`, và `groupByOption` (nếu có)
         const packingListTotals = packinglistData.reduce((acc, item) => {
             const { ma_vattu, type, sl, slThucte = 0, slQuydoi = 0 } = item;
+            const groupKey = groupByOption ? item[groupByOption] || 'default' : 'default';
+    
             if (!acc[ma_vattu]) acc[ma_vattu] = {};
-            if (!acc[ma_vattu][type]) acc[ma_vattu][type] = { slPacking: 0, slThucte: 0, slQuydoi: 0 };
-
-            acc[ma_vattu][type].slPacking += parseFloat(sl) || 0;
-            acc[ma_vattu][type].slThucte += parseFloat(slThucte) || 0;
-            acc[ma_vattu][type].slQuydoi += parseFloat(slQuydoi) || 0;
-
+            if (!acc[ma_vattu][type]) acc[ma_vattu][type] = {};
+            if (!acc[ma_vattu][type][groupKey]) acc[ma_vattu][type][groupKey] = { slPacking: 0, slThucte: 0, slQuydoi: 0 };
+    
+            acc[ma_vattu][type][groupKey].slPacking += parseFloat(sl) || 0;
+            acc[ma_vattu][type][groupKey].slThucte += parseFloat(slThucte) || 0;
+            acc[ma_vattu][type][groupKey].slQuydoi += parseFloat(slQuydoi) || 0;
+    
             return acc;
         }, {});
-
-        // Compare totals
+    
+        // So sánh các tổng hợp dữ liệu
         const result = {};
-
+    
         for (const [ma_vattu, types] of Object.entries(bienbanTotals)) {
-            result[ma_vattu] = {};
-            for (const [type, totals] of Object.entries(types)) {
-                const packingListTotal = packingListTotals[ma_vattu] && packingListTotals[ma_vattu][type];
-                if (packingListTotal) {
-                    result[ma_vattu][type] = {
-                        slPackingMatch: totals.slPacking === packingListTotal.slPacking,
-                        slThucteMatch: totals.slThucte === packingListTotal.slThucte,
-                        slQuydoiMatch: totals.slQuydoi === packingListTotal.slQuydoi,
-                        typeMatch: totals.type === packingListTotal.type, // Check type match
-                        bienBanTotal: totals,
-                        packingListTotal: packingListTotal
-                    };
-                } else {
-                    result[ma_vattu][type] = {
-                        slPackingMatch: false,
-                        slThucteMatch: false,
-                        slQuydoiMatch: false,
-                        typeMatch: false,
-                        bienBanTotal: totals,
-                        packingListTotal: {
-                            slPacking: 0,
-                            slThucte: 0,
-                            slQuydoi: 0
-                        }
-                    };
+            const ten_vattu = tenVattuMap[ma_vattu] || 'Tên vật tư không xác định'; // Lấy tên vật tư từ map
+            result[ma_vattu] = {  }; // Thêm tên vật tư vào kết quả
+    
+            for (const [type, groupKeys] of Object.entries(types)) {
+                result[ma_vattu][type] = {};
+                for (const [groupKey, totals] of Object.entries(groupKeys)) {
+                    const packingListTotal =
+                        packingListTotals[ma_vattu] &&
+                        packingListTotals[ma_vattu][type] &&
+                        packingListTotals[ma_vattu][type][groupKey];
+    
+                    if (packingListTotal) {
+                        result[ma_vattu][type][groupKey] = {
+                            slPackingMatch: totals.slPacking === packingListTotal.slPacking,
+                            slThucteMatch: totals.slThucte === packingListTotal.slThucte,
+                            slQuydoiMatch: totals.slQuydoi === packingListTotal.slQuydoi,
+                            groupKeyMatch: groupKey === (packingListTotal[groupByOption] || 'default'),
+                            bienBanTotal: totals,
+                            packingListTotal: packingListTotal,
+                            ten_vattu: ten_vattu
+                        };
+                    } else {
+                        result[ma_vattu][type][groupKey] = {
+                            slPackingMatch: false,
+                            slThucteMatch: false,
+                            slQuydoiMatch: false,
+                            groupKeyMatch: false,
+                            bienBanTotal: totals,
+                            packingListTotal: {
+                                slPacking: 0,
+                                slThucte: 0,
+                                slQuydoi: 0
+                            },
+                            ten_vattu: ten_vattu
+                        };
+                    }
                 }
             }
         }
-
+    
         return result;
-    }
+    };
+    
+    
 }
 
 module.exports = PackingListService

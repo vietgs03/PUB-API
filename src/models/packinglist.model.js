@@ -41,6 +41,8 @@ const PackingList = function(packinglist){
     this.ART = packinglist.ART;
     this.dac_diem_nhan_dang = packinglist.dac_diem_nhan_dang;
     this.tanggiam = packinglist.tanggiam;
+    this.xuat_xu = packinglist.xuat_xu;
 }
 
 module.exports =PackingList
+
