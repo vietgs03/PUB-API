@@ -1,4 +1,6 @@
-const PackingListService = require('../services/packinglist.services')
+const PackingListService =require('../services/packinglist.services')
+
+
 const {OK,CREATED,SuccessResponse}  = require("../core/success.response")
 
 class PackingListController {
@@ -8,7 +10,11 @@ class PackingListController {
             message:'Get all packing list success',
             metadata:await PackingListService.getPackingListImport(req.query)
         }).send(res)
-    }
+    };
+
+    
+    
+    
 
     checkStatus = async (req,res,next) => {
         new SuccessResponse({
@@ -30,6 +36,14 @@ class PackingListController {
             metadata:await PackingListService.compare(req.body)
         }).send(res)
     }
+
+    getPackingListByField=async(req,res,next)=>{
+        new SuccessResponse({
+            message:"Get packing by filed success",
+            metadata:await PackingListService.getPackingListByField(req.query)
+        }).send(res)
+    }
+
 }
 
 module.exports = new PackingListController()

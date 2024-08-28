@@ -1,14 +1,34 @@
 const packinglistModel = require('../models/packinglist.model')
-const {getAllPackingList,checkStatus,getBienBanGiamDinh,getPackList} =require('../models/repositories/packinglist.repo')
+const { getAllPackingList, checkStatus, getBienBanGiamDinh, getPackList, getPackingListByField } = require('../models/repositories/packinglist.repo')
 const db = require('../dbs/init.mysqldb')
-const {BadRequest} = require("../core/error.response")
+const { BadRequest } = require("../core/error.response")
 const PackingList = require('../models/packinglist.model')
 class PackingListService {
-    static getPackingListImport = async ({invoice_no,fromdate,todate})=>{
+    static getPackingListByField = async ( search ) => {
+        if (!search || Object.keys(search).length === 0) throw new BadRequest('Missing parameter')
+
+        try {
+            const result = await getPackingListByField({ search })
+            return result
+        }
+        catch (error) {
+            console.error("Error getting packing list by field:", {
+                search,
+                error: error.message,
+                stack: error.stack
+            });
+            throw new Error("Unable to retrieve packing list");
+        }
+    };
+
+
+
+
+    static getPackingListImport = async ({ invoice_no,fromdate,todate }) => {
 
         if(!invoice_no || !fromdate || !todate) throw new BadRequest('Missing parameter')
 
-        const packinglist = await getAllPackingList({invoice_no,fromdate,todate})
+        const packinglist = await getAllPackingList({ invoice_no,fromdate,todate});
 
         return packinglist
     }
@@ -23,20 +43,20 @@ class PackingListService {
         const user = packinglist.user
 
         if (!invoice_no) throw new BadRequest('Không tìm thấy Invoice No');
-    
+
         // Kiểm tra trạng thái của packing list
         const statusResult = await this.checkStatus({ invoice_no });
-    
+
         const status = statusResult[0]?.status;
-    
+
         // Nếu trạng thái là 2 thì không cho phép insert
         if (status === 2) {
             throw new BadRequest(`Packing list của ${invoice_no} đã đóng và không thể chèn thêm.`);
         }
-    
+
         // Nếu trạng thái là 1, tiếp tục kiểm tra tồn tại và xóa packing list cũ nếu có
         await this.checkAndDeleteExistPackingList({ invoice_no });
-    
+
         // Chuẩn bị dữ liệu để chèn
         const valueToInsert = packinglist.data.map((item) => {
             const packinglistInstance = new PackingList({
@@ -44,31 +64,31 @@ class PackingListService {
                 request_id: requestId,
                 updated_by: user,
                 created_by: user,
-                tanggiam:'tang'
+                tanggiam: 'tang'
             });
             return Object.values(packinglistInstance);
         });
-    
+
         const columns = Object.keys(new PackingList({})).join(', ');
         const placeholders = new Array(Object.keys(new PackingList({})).length).fill('?').join(', ');
-    
+
         const query = `INSERT INTO ${tableName} (${columns}) VALUES (${placeholders})`;
-    
+
         for (const values of valueToInsert) {
             await db.executeQuery(query, values);
         }
-        this.updateMavattu( requestId );
-        this.updateTenvattu( requestId );
-        this.updateInvoiceno( invoice_no );
-        this.insertStockMouvement( requestId );
+        this.updateMavattu(requestId);
+        this.updateTenvattu(requestId);
+        this.updateInvoiceno(invoice_no);
+        this.insertStockMouvement(requestId);
         return { message: `Packing list của ${invoice_no} đã được tạo mới thành công` };
     };
-    
-    static checkStatus = async ({invoice_no})=>{
 
-        if(!invoice_no) throw new BadRequest('Missing parameter')
+    static checkStatus = async ({ invoice_no }) => {
 
-        const status = await checkStatus({invoice_no})
+        if (!invoice_no) throw new BadRequest('Missing parameter')
+
+        const status = await checkStatus({ invoice_no })
 
         return status
     }
@@ -97,7 +117,7 @@ class PackingListService {
         return { message: `Packing list của ${invoice_no} đã được xóa` };
     };
 
-    static updateMavattu = async (requestId)=>{
+    static updateMavattu = async (requestId) => {
 
         let query = `
             UPDATE packinglist_import SET ma_vattu_vtec = CONCAT(
@@ -118,7 +138,7 @@ class PackingListService {
         return await db.executeQuery(query, [requestId])
     }
 
-    static updateTenvattu = async (requestId)=>{
+    static updateTenvattu = async (requestId) => {
 
         let query = `                
                 UPDATE packinglist_import pi
@@ -129,7 +149,7 @@ class PackingListService {
         return await db.executeQuery(query, [requestId])
     }
 
-    static updateInvoiceno = async (invoice_no)=>{
+    static updateInvoiceno = async (invoice_no) => {
         let query = `Update packinglist_import pi left join bienBan_giamdinh bg on pi.invoice_no=bg.invoice_no set pi.so_chung_tu=bg.so_chung_tu where bg.invoice_no = ?`
         return await db.executeQuery(query, [invoice_no])
     }
@@ -200,27 +220,18 @@ class PackingListService {
                 AND pi.request_id = ?
             ORDER BY e.rowid;
         `;
-    
+
         return await db.executeQuery(query, [requestId]);
     };
     
-    static compare = async (invoice_no) => {
-        // Lấy dữ liệu biên bản giám định
-        const groupByOption = invoice_no.groupByOption;
-        const bienbanData = await getBienBanGiamDinh(invoice_no);
-        if (bienbanData.length === 0) throw new BadRequest('Không tìm thấy biên bản ghi');
-    
-        // Lấy dữ liệu packing list
-        const packinglistData = await getPackList(invoice_no);
-        if (packinglistData.length === 0) throw new BadRequest('Không tìm thấy packing list ghi');
-    
-        // Tạo một map để lưu tên vật tư dựa trên mã vật tư (ma_vattu)
-        const tenVattuMap = bienbanData.reduce((acc, item) => {
-            acc[item.ma_vattu] = item.ten_vattu;
-            return acc;
-        }, {});
-    
-        // Gom nhóm dữ liệu biên bản giám định theo `ma_vattu`, `type`, và `groupByOption` (nếu có)
+    static compare = async(invoice_no)=>{
+
+        const bienbanData = await getBienBanGiamDinh(invoice_no)
+        if(bienbanData.length == 0) throw new BadRequest('Không tìm thấy biên bản ghi')
+
+        const packinglistData = await getPackList(invoice_no)
+        if(packinglistData.length == 0) throw new BadRequest('Không tìm thấy biên bản ghi')
+        
         const bienbanTotals = bienbanData.reduce((acc, item) => {
             const { ma_vattu, type, slPacking, slThucte, slQuydoi } = item;
             const groupKey = groupByOption ? item[groupByOption] || 'default' : 'default';

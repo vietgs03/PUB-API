@@ -6,6 +6,11 @@ debugger
 
 route.use('/v1/packinglist', require('./packinglist/index'))
 
+
+
+route.use('/v1/api/vattulist',require('./vattu/index'))
+
+
 //check permission
 
-module.exports = route
+module.exports = route;
